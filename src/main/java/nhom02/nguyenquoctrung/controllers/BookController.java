@@ -14,6 +14,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.*;
+import java.io.IOException;
+import java.util.UUID;
 
 @Controller
 @RequestMapping("/books")
@@ -50,6 +54,7 @@ public class BookController {
         public String addBook(
                         @Valid @ModelAttribute("book") Book book,
                         BindingResult bindingResult,
+                        @RequestParam("imageFile") MultipartFile imageFile,
                         Model model) {
                 if (bindingResult.hasErrors()) {
                         var errors = bindingResult.getAllErrors()
@@ -60,6 +65,18 @@ public class BookController {
                         model.addAttribute("categories",
                                         categoryService.getAllCategories());
                         return "book/add";
+                }
+                if (!imageFile.isEmpty()) {
+                        try {
+                                String fileName = UUID.randomUUID().toString() + "_" + imageFile.getOriginalFilename();
+                                Path path = Paths.get("src/main/resources/static/img");
+                                Files.createDirectories(path);
+                                Files.copy(imageFile.getInputStream(), path.resolve(fileName),
+                                                StandardCopyOption.REPLACE_EXISTING);
+                                book.setImage("img/" + fileName);
+                        } catch (IOException e) {
+                                e.printStackTrace();
+                        }
                 }
                 bookService.addBook(book);
                 return "redirect:/books";
@@ -100,6 +117,7 @@ public class BookController {
         @PostMapping("/edit")
         public String editBook(@Valid @ModelAttribute("book") Book book,
                         BindingResult bindingResult,
+                        @RequestParam("imageFile") MultipartFile imageFile,
                         Model model) {
                 if (bindingResult.hasErrors()) {
                         var errors = bindingResult.getAllErrors()
@@ -110,6 +128,18 @@ public class BookController {
                         model.addAttribute("categories",
                                         categoryService.getAllCategories());
                         return "book/edit";
+                }
+                if (!imageFile.isEmpty()) {
+                        try {
+                                String fileName = UUID.randomUUID().toString() + "_" + imageFile.getOriginalFilename();
+                                Path path = Paths.get("src/main/resources/static/img");
+                                Files.createDirectories(path);
+                                Files.copy(imageFile.getInputStream(), path.resolve(fileName),
+                                                StandardCopyOption.REPLACE_EXISTING);
+                                book.setImage("img/" + fileName);
+                        } catch (IOException e) {
+                                e.printStackTrace();
+                        }
                 }
                 bookService.updateBook(book);
                 return "redirect:/books";

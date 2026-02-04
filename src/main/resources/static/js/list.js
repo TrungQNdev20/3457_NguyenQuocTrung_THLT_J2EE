@@ -1,6 +1,6 @@
 $(document).ready(function () {
     // Check if the user has admin role from data attribute
-    var isAdmin = $('#book-table').data('is-admin');
+    var isAdmin = $('#book-grid').data('is-admin');
 
     // Call API to get list of books
     $.ajax({
@@ -8,38 +8,61 @@ $(document).ready(function () {
         type: 'GET',
         dataType: 'json',
         success: function (data) {
-            let trHTML = '';
+            let cardsHTML = '';
             $.each(data, function (i, item) {
-                trHTML += '<tr id="book-' + item.id + '">' +
-                    '<td>' + item.id + '</td>' +
-                    '<td>' + item.title + '</td>' +
-                    '<td>' + item.author + '</td>' +
-                    '<td>' + item.price + '</td>' +
-                    '<td>' + item.category + '</td>' +
-                    '<td>';
+                // Determine a placeholder letter or icon
+                let placeholderChar = item.title ? item.title.charAt(0).toUpperCase() : 'B';
+
+                cardsHTML += '<div class="col-md-4 col-lg-3 mb-4" id="book-' + item.id + '">';
+                cardsHTML += '<div class="book-card">';
+
+                // Image or Placeholder
+                if (item.image) {
+                    cardsHTML += '<div class="book-image-container" style="height: 200px; overflow: hidden; border-radius: 8px; margin-bottom: 1rem; background: #f3f4f6;">';
+                    cardsHTML += '<img src="/' + item.image + '" alt="' + item.title + '" style="width: 100%; height: 100%; object-fit: cover;">';
+                    cardsHTML += '</div>';
+                } else {
+                    cardsHTML += '<div class="book-image-placeholder">' + placeholderChar + '</div>';
+                }
+
+                // Content
+                cardsHTML += '<div class="book-title" title="' + item.title + '">' + truncate(item.title, 40) + '</div>';
+                cardsHTML += '<div class="book-author">' + item.author + '</div>';
+
+                // Price - Formatting it nicely
+                cardsHTML += '<div class="book-price">$' + item.price + '</div>';
+
+                // Actions Container
+                cardsHTML += '<div class="book-actions flex-column">';
+
+                // Add to Cart button (visible to all) - Form
+                cardsHTML += '<form action="/books/add-to-cart" method="post" class="w-100 mb-2">';
+                if (typeof csrfToken !== 'undefined' && typeof csrfParam !== 'undefined') {
+                    cardsHTML += '<input type="hidden" name="' + csrfParam + '" value="' + csrfToken + '">';
+                }
+                cardsHTML += '<input type="hidden" name="id" value="' + item.id + '">';
+                cardsHTML += '<input type="hidden" name="name" value="' + item.title + '">';
+                cardsHTML += '<input type="hidden" name="price" value="' + item.price + '">';
+                cardsHTML += '<button type="submit" class="btn btn-primary w-100" onclick="return confirm(\'Add to Cart?\')">Add to Cart</button>';
+                cardsHTML += '</form>';
 
                 // Admin buttons
                 if (isAdmin) {
-                    trHTML += '<a href="/books/edit/' + item.id + '" class="btn btn-success btn-sm">Edit</a> ' +
-                        '<a href="javascript:void(0)" class="btn btn-danger btn-sm" onclick="apiDeleteBook(' + item.id + '); return false;">Delete</a> ';
+                    cardsHTML += '<div class="d-flex gap-2 w-100">';
+                    cardsHTML += '<a href="/books/edit/' + item.id + '" class="btn btn-outline-primary flex-grow-1 btn-sm">Edit</a>';
+                    cardsHTML += '<a href="javascript:void(0)" class="btn btn-outline-danger flex-grow-1 btn-sm" onclick="apiDeleteBook(' + item.id + '); return false;">Delete</a>';
+                    cardsHTML += '</div>';
                 }
 
-                // Add to Cart button (visible to all)
-                trHTML += '<form action="/books/add-to-cart" method="post" class="d-inline">';
-
-                if (typeof csrfToken !== 'undefined' && typeof csrfParam !== 'undefined') {
-                    trHTML += '<input type="hidden" name="' + csrfParam + '" value="' + csrfToken + '">';
-                }
-
-                trHTML += '<input type="hidden" name="id" value="' + item.id + '">' +
-                    '<input type="hidden" name="name" value="' + item.title + '">' +
-                    '<input type="hidden" name="price" value="' + item.price + '">' +
-                    '<button type="submit" class="btn btn-primary btn-sm" onclick="return confirm(\'Are you sure you want to add this book to cart?\')">Add to Cart</button>' +
-                    '</form>' +
-                    '</td>' +
-                    '</tr>';
+                cardsHTML += '</div>'; // End actions
+                cardsHTML += '</div>'; // End card
+                cardsHTML += '</div>'; // End col
             });
-            $('#book-table-body').append(trHTML);
+            $('#book-grid').append(cardsHTML);
+        },
+        error: function (xhr, status, error) {
+            console.error("Error fetching books:", error);
+            $('#book-grid').html('<div class="col-12 text-center text-danger">Failed to load books.</div>');
         }
     });
 });
@@ -55,12 +78,16 @@ function apiDeleteBook(id) {
                 }
             },
             success: function () {
-                alert('Book deleted successfully!');
-                $('#book-' + id).remove();
+                // Remove the card with animation
+                $('#book-' + id).fadeOut(300, function () { $(this).remove(); });
             },
             error: function (xhr, status, error) {
                 alert('Error deleting book: ' + xhr.status);
             }
         });
     }
+}
+
+function truncate(str, n) {
+    return (str.length > n) ? str.substr(0, n - 1) + '&hellip;' : str;
 }

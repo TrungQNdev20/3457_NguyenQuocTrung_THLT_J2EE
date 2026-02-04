@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
 @Builder
-public record BookGetVm(Long id, String title, String author, Double price, String category) {
+public record BookGetVm(Long id, String title, String author, Double price, String category, String image) {
     public static BookGetVm from(@NotNull Book book) {
         return BookGetVm.builder()
                 .id(book.getId())
@@ -13,6 +13,7 @@ public record BookGetVm(Long id, String title, String author, Double price, Stri
                 .author(book.getAuthor())
                 .price(book.getPrice())
                 .category(book.getCategory().getName())
+                .image(book.getImage())
                 .build();
     }
 }

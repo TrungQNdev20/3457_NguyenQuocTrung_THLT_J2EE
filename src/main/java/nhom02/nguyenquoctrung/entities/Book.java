@@ -35,6 +35,8 @@ public class Book {
     @Column(name = "price")
     @Positive(message = "Price must be greater than 0")
     private Double price;
+    @Column(name = "image")
+    private String image;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", referencedColumnName = "id")
     @ValidCategoryId
